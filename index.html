@@ -5,8 +5,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script>
         $(document).ready(function() {
-            var audioContext;
-            var audioBuffer;
+            var audio;
             
             // Function to send the request
             function sendRequest(text) {
@@ -35,7 +34,7 @@
                     contentType: 'application/json',
                     data: JSON.stringify(requestBody),
                     success: function(response) {
-                        decodeAudio(response.audioContent);
+                        playAudio(response.audioContent);
                     },
                     error: function(xhr, status, error) {
                         console.log('Error:', error); // Handle any errors here
@@ -43,43 +42,32 @@
                 });
             }
             
-            // Decode the audio content and create an audio buffer
-            function decodeAudio(audioContent) {
-                var audioData = base64ToArrayBuffer(audioContent);
+            // Play the audio using the synthesized audio data
+            function playAudio(audioContent) {
+                var audioBlob = base64ToBlob(audioContent, 'audio/wav');
+                var audioUrl = URL.createObjectURL(audioBlob);
                 
-                audioContext.decodeAudioData(audioData, function(buffer) {
-                    audioBuffer = buffer;
-                    enablePlayButton();
-                }, function(error) {
-                    console.log('Error decoding audio:', error);
-                });
+                audio = new Audio(audioUrl);
+                audio.play();
             }
             
-            // Convert Base64 data to an ArrayBuffer
-            function base64ToArrayBuffer(base64Data) {
-                var binaryString = atob(base64Data);
-                var length = binaryString.length;
-                var bytes = new Uint8Array(length);
-                
-                for (var i = 0; i < length; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
+            // Convert Base64 data to a Blob object
+            function base64ToBlob(base64Data, contentType) {
+                var byteCharacters = atob(base64Data);
+                var byteArrays = [];
+                for (var offset = 0; offset < byteCharacters.length; offset += 1024) {
+                    var slice = byteCharacters.slice(offset, offset + 1024);
+                    
+                    var byteNumbers = new Array(slice.length);
+                    for (var i = 0; i < slice.length; i++) {
+                        byteNumbers[i] = slice.charCodeAt(i);
+                    }
+                    
+                    var byteArray = new Uint8Array(byteNumbers);
+                    byteArrays.push(byteArray);
                 }
                 
-                return bytes.buffer;
-            }
-            
-            // Enable the Play button
-            function enablePlayButton() {
-                var playButton = document.getElementById('playButton');
-                playButton.disabled = false;
-            }
-            
-            // Play the audio buffer
-            function playAudioBuffer() {
-                var source = audioContext.createBufferSource();
-                source.buffer = audioBuffer;
-                source.connect(audioContext.destination);
-                source.start();
+                return new Blob(byteArrays, { type: contentType });
             }
             
             // Handle form submission
@@ -91,9 +79,6 @@
                     sendRequest(userInput);
                 }
             });
-            
-            // Create the audio context when the document is loaded
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
         });
     </script>
 </head>
@@ -102,7 +87,5 @@
         <input type="text" id="textInput" required>
         <button type="submit">Submit</button>
     </form>
-    
-    <button id="playButton" disabled onclick="playAudioBuffer()">Play</button>
 </body>
 </html>
