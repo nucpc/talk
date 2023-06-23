@@ -49,9 +49,10 @@
                 
                 audio = new Audio();
                 audio.src = audioUrl;
-                
-                var playButton = document.getElementById('playButton');
-                playButton.disabled = false;
+                audio.oncanplay = function() {
+                    var playButton = document.getElementById('playButton');
+                    playButton.disabled = false;
+                };
             }
             
             // Convert Base64 data to a Blob object
@@ -92,6 +93,6 @@
     </script>
 </head>
 <body>
-    <button id="playButton">Play</button>
+    <button id="playButton" disabled>Play</button>
 </body>
 </html>
