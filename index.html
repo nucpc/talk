@@ -49,10 +49,6 @@
                 
                 audio = new Audio();
                 audio.src = audioUrl;
-                audio.oncanplay = function() {
-                    var playButton = document.getElementById('playButton');
-                    playButton.disabled = false;
-                };
             }
             
             // Convert Base64 data to a Blob object
@@ -79,20 +75,27 @@
             playButton.addEventListener('click', function() {
                 if (audio) {
                     audio.play();
-                    playButton.disabled = true;
                 }
             });
             
-            // Prompt the user to enter text
-            var userInput = prompt('Enter the text to be spoken:');
-            if (userInput !== null && userInput.trim() !== '') {
-                // Call the function to send the request
-                sendRequest(userInput);
-            }
+            // Handle form submission
+            var form = document.getElementById('inputForm');
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var userInput = document.getElementById('textInput').value;
+                if (userInput.trim() !== '') {
+                    sendRequest(userInput);
+                }
+            });
         });
     </script>
 </head>
 <body>
+    <form id="inputForm">
+        <input type="text" id="textInput" required>
+        <button type="submit">Submit</button>
+    </form>
+    
     <button id="playButton" disabled>Play</button>
 </body>
 </html>
