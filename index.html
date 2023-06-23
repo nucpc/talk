@@ -5,7 +5,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script>
         $(document).ready(function() {
-            var audio;
+            var audioContext;
+            var audioBuffer;
             
             // Function to send the request
             function sendRequest(text) {
@@ -34,7 +35,7 @@
                     contentType: 'application/json',
                     data: JSON.stringify(requestBody),
                     success: function(response) {
-                        playAudio(response.audioContent);
+                        decodeAudio(response.audioContent);
                     },
                     error: function(xhr, status, error) {
                         console.log('Error:', error); // Handle any errors here
@@ -42,41 +43,44 @@
                 });
             }
             
-            // Play the audio using the synthesized audio data
-            function playAudio(audioContent) {
-                var audioBlob = base64ToBlob(audioContent, 'audio/wav');
-                var audioUrl = URL.createObjectURL(audioBlob);
+            // Decode the audio content and create an audio buffer
+            function decodeAudio(audioContent) {
+                var audioData = base64ToArrayBuffer(audioContent);
                 
-                audio = new Audio();
-                audio.src = audioUrl;
+                audioContext.decodeAudioData(audioData, function(buffer) {
+                    audioBuffer = buffer;
+                    enablePlayButton();
+                }, function(error) {
+                    console.log('Error decoding audio:', error);
+                });
             }
             
-            // Convert Base64 data to a Blob object
-            function base64ToBlob(base64Data, contentType) {
-                var byteCharacters = atob(base64Data);
-                var byteArrays = [];
-                for (var offset = 0; offset < byteCharacters.length; offset += 1024) {
-                    var slice = byteCharacters.slice(offset, offset + 1024);
-                    
-                    var byteNumbers = new Array(slice.length);
-                    for (var i = 0; i < slice.length; i++) {
-                        byteNumbers[i] = slice.charCodeAt(i);
-                    }
-                    
-                    var byteArray = new Uint8Array(byteNumbers);
-                    byteArrays.push(byteArray);
+            // Convert Base64 data to an ArrayBuffer
+            function base64ToArrayBuffer(base64Data) {
+                var binaryString = atob(base64Data);
+                var length = binaryString.length;
+                var bytes = new Uint8Array(length);
+                
+                for (var i = 0; i < length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
                 }
                 
-                return new Blob(byteArrays, { type: contentType });
+                return bytes.buffer;
             }
             
-            // Handle play button click event
-            var playButton = document.getElementById('playButton');
-            playButton.addEventListener('click', function() {
-                if (audio) {
-                    audio.play();
-                }
-            });
+            // Enable the Play button
+            function enablePlayButton() {
+                var playButton = document.getElementById('playButton');
+                playButton.disabled = false;
+            }
+            
+            // Play the audio buffer
+            function playAudioBuffer() {
+                var source = audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(audioContext.destination);
+                source.start();
+            }
             
             // Handle form submission
             var form = document.getElementById('inputForm');
@@ -87,6 +91,9 @@
                     sendRequest(userInput);
                 }
             });
+            
+            // Create the audio context when the document is loaded
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
         });
     </script>
 </head>
@@ -96,6 +103,6 @@
         <button type="submit">Submit</button>
     </form>
     
-    <button id="playButton" disabled>Play</button>
+    <button id="playButton" disabled onclick="playAudioBuffer()">Play</button>
 </body>
 </html>
