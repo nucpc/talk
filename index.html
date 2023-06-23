@@ -1,91 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Text-to-Speech Request</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            var audio;
-            
-            // Function to send the request
-            function sendRequest(text) {
-                var url = 'https://us-central1-texttospeech.googleapis.com/v1beta1/text:synthesize';
-                var requestBody = {
-                    "audioConfig": {
-                        "audioEncoding": "LINEAR16",
-                        "effectsProfileId": [
-                            "small-bluetooth-speaker-class-device"
-                        ],
-                        "pitch": 0,
-                        "speakingRate": 1
-                    },
-                    "input": {
-                        "text": text
-                    },
-                    "voice": {
-                        "languageCode": "en-US",
-                        "name": "en-US-Neural2-J"
-                    }
-                };
-                
-                $.ajax({
-                    type: 'POST',
-                    url: url,
-                    contentType: 'application/json',
-                    data: JSON.stringify(requestBody),
-                    success: function(response) {
-                        playAudio(response.audioContent);
-                    },
-                    error: function(xhr, status, error) {
-                        console.log('Error:', error); // Handle any errors here
-                    }
-                });
-            }
-            
-            // Play the audio using the synthesized audio data
-            function playAudio(audioContent) {
-                var audioBlob = base64ToBlob(audioContent, 'audio/wav');
-                var audioUrl = URL.createObjectURL(audioBlob);
-                
-                audio = new Audio(audioUrl);
-                audio.play();
-            }
-            
-            // Convert Base64 data to a Blob object
-            function base64ToBlob(base64Data, contentType) {
-                var byteCharacters = atob(base64Data);
-                var byteArrays = [];
-                for (var offset = 0; offset < byteCharacters.length; offset += 1024) {
-                    var slice = byteCharacters.slice(offset, offset + 1024);
-                    
-                    var byteNumbers = new Array(slice.length);
-                    for (var i = 0; i < slice.length; i++) {
-                        byteNumbers[i] = slice.charCodeAt(i);
-                    }
-                    
-                    var byteArray = new Uint8Array(byteNumbers);
-                    byteArrays.push(byteArray);
-                }
-                
-                return new Blob(byteArrays, { type: contentType });
-            }
-            
-            // Handle form submission
-            var form = document.getElementById('inputForm');
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                var userInput = document.getElementById('textInput').value;
-                if (userInput.trim() !== '') {
-                    sendRequest(userInput);
-                }
-            });
-        });
-    </script>
+    <title>Text-to-Speech</title>
 </head>
 <body>
     <form id="inputForm">
         <input type="text" id="textInput" required>
         <button type="submit">Submit</button>
     </form>
+
+    <script>
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                var msg = new SpeechSynthesisUtterance();
+                msg.text = text;
+                window.speechSynthesis.speak(msg);
+            } else {
+                alert('Text-to-speech is not supported in this browser.');
+            }
+        }
+
+        var form = document.getElementById('inputForm');
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var userInput = document.getElementById('textInput').value;
+            if (userInput.trim() !== '') {
+                speak(userInput);
+            }
+        });
+    </script>
 </body>
 </html>
